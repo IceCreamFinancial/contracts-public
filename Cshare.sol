@@ -15,7 +15,7 @@ contract Cshare is ERC20Burnable, Operator {
     uint256 public constant COMMUNITY_FUND_POOL_ALLOCATION = 4500 ether;
     uint256 public constant DEV_FUND_POOL_ALLOCATION = 4500 ether;
 
-    uint256 public constant VESTING_DURATION = 300 days;
+    uint256 public constant VESTING_DURATION = 150 days;
     uint256 public startTime;
     uint256 public endTime;
 
