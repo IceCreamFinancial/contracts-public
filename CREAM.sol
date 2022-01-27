@@ -44,10 +44,10 @@ contract Cream is ERC20Burnable, Operator {
     using SafeMath8 for uint8;
     using SafeMath for uint256;
 
-    // Initial distribution for the first 24h genesis pools
-    uint256 public constant INITIAL_GENESIS_POOL_DISTRIBUTION = 2400 ether;
+    // Initial distribution for the first 48h genesis pools
+    uint256 public constant INITIAL_GENESIS_POOL_DISTRIBUTION = 10000 ether;
     // Initial distribution for the day 2-5 CREAM-WETH LP -> CREAM pool
-    uint256 public constant INITIAL_CREAM_POOL_DISTRIBUTION = 21600 ether;
+    uint256 public constant INITIAL_CREAM_POOL_DISTRIBUTION = 0 ether;
     // Distribution for airdrops wallet
     uint256 public constant INITIAL_AIRDROP_WALLET_DISTRIBUTION = 1000 ether;
 
