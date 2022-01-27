@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/utils/SafeERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
 
 // Note that this pool has no minter key of CREAM (rewards).
 // Instead, the governance will call CREAM distributeReward method and send reward to this pool at the beginning.
@@ -19,6 +19,8 @@ contract CreamGenesisRewardPool {
     struct UserInfo {
         uint256 amount; // How many tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
+        uint16 depositAmountMim;
+        uint16 depositAmountAvax;
     }
 
     // Info of each pool.
@@ -49,15 +51,15 @@ contract CreamGenesisRewardPool {
     uint256 public poolEndTime;
 
     // TESTNET
-    uint256 public creamPerSecond = 0.66667 ether; // 2400 CREAM / (1h * 60min * 60s)
-    uint256 public runningTime = 1 hours; // 1 hours
-    uint256 public constant TOTAL_REWARDS = 2400 ether;
+   // uint256 public creamPerSecond = 0.66667 ether; // 2400 CREAM / (1h * 60min * 60s)
+   // uint256 public runningTime = 1 hours; // 1 hours
+   // uint256 public constant TOTAL_REWARDS = 2400 ether;
     // END TESTNET
 
     // MAINNET
-    //uint256 public creamPerSecond = 0.02777 ether; // 2400 CREAM / (24h * 60min * 60s)
-    //uint256 public runningTime = 1 days; // 1 days
-    //uint256 public constant TOTAL_REWARDS = 2400 ether;
+    uint256 public creamPerSecond = 0.05787 ether; // 10000 CREAM / (48h * 60min * 60s)
+    uint256 public runningTime = 2 days; // 1 days
+    uint256 public constant TOTAL_REWARDS = 10000 ether;
     // END MAINNET
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -243,6 +245,7 @@ contract CreamGenesisRewardPool {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_sender];
         updatePool(_pid);
+
         if (user.amount > 0) {
             uint256 _pending = user
                 .amount
@@ -255,12 +258,15 @@ contract CreamGenesisRewardPool {
             }
         }
         if (_amount > 0) {
-            pool.token.safeTransferFrom(_sender, address(this), _amount);
-            if (address(pool.token) == mim) {
-                user.amount = user.amount.add(_amount.mul(9900).div(10000));
-            } else {
-                user.amount = user.amount.add(_amount);
-            }
+        if (address(pool.token) == mim) {
+            require(_amount + depositAmountMim < 2500 * 1e18, "MIM LIMIT OF 2500 EXCEEDED ");
+                pool.token.safeTransferFrom(_sender, address(this), _amount);
+                userInfo.depositAmountMim.add(_amount.mul(9900).div(10000));
+        } else {
+            require(_amount + depositAmountAvax < 40 * 1e18, "AVAX LIMIT OF 40 EXCEEDED");
+                pool.token.safeTransferFrom(_sender, address(this), _amount);
+                userInfo.depositAmountAvax.add(_amount);
+        }
         }
         user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
