@@ -3,8 +3,8 @@
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // Note that this pool has no minter key of CREAM (rewards).
 // Instead, the governance will call CREAM distributeReward method and send reward to this pool at the beginning.
@@ -32,7 +32,7 @@ contract CreamGenesisRewardPool {
 
     IERC20 public cream;
     address public mim;
-    address public stable;
+    address public avax;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -49,12 +49,11 @@ contract CreamGenesisRewardPool {
     // The time when CREAM mining ends.
     uint256 public poolEndTime;
 
-
     // MAINNET
     uint256 public creamPerSecond = 0.05787 ether; // 10000 CREAM / (48h * 60min * 60s)
     uint256 public runningTime = 2 days; // 1 days
     uint256 public constant TOTAL_REWARDS = 10000 ether;
-     END MAINNET
+    // END MAINNET
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -68,13 +67,13 @@ contract CreamGenesisRewardPool {
     constructor(
         address _cream,
         address _mim,
-        address _stable,
+        address _avax,
         uint256 _poolStartTime
     ) public {
         require(block.timestamp < _poolStartTime, "late");
         if (_cream != address(0)) cream = IERC20(_cream);
         if (_mim != address(0)) mim = _mim;
-        if (_stable != address(0)) stable = _stable;
+        if (_avax != address(0)) avax = _avax;
         poolStartTime = _poolStartTime;
         poolEndTime = poolStartTime + runningTime;
         operator = msg.sender;
@@ -253,18 +252,32 @@ contract CreamGenesisRewardPool {
             }
         }
         if (_amount > 0) {
-            if((address(pool.token) == mim) && (_amount + user.amount <= 2500 * 1e18)) {
-                pool.token.safeTransferFrom(_sender, address(this), _amount);
-                user.amount = user.amount.add(_amount.mul(9900).div(10000));
-                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(1e18);
-            } else if ((address(pool.token) == stable) && (_amount + user.amount <= 40 *1e18)) {
+            if (address(pool.token) == mim) {
+                require(
+                    _amount.add(user.amount) <= (2500 * 1e18),
+                    "Deposit too large"
+                );
                 pool.token.safeTransferFrom(_sender, address(this), _amount);
                 user.amount = user.amount.add(_amount);
-                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(1e18);
+                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(
+                    1e18
+                );
+            } else if (address(pool.token) == avax) {
+                require(
+                    _amount.add(user.amount) <= (40 * 1e18),
+                    "Deposit too large"
+                );
+                pool.token.safeTransferFrom(_sender, address(this), _amount);
+                user.amount = user.amount.add(_amount);
+                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(
+                    1e18
+                );
             } else {
                 pool.token.safeTransferFrom(_sender, address(this), _amount);
                 user.amount = user.amount.add(_amount);
-                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(1e18);
+                user.rewardDebt = user.amount.mul(pool.accCreamPerShare).div(
+                    1e18
+                );
             }
         }
         emit Deposit(_sender, _pid, _amount);
